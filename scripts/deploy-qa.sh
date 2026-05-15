@@ -8,6 +8,7 @@ readonly APP_DIR="${RELEASE_ROOT}/current"
 readonly LOCK_FILE="/var/lock/praestoworks-qa-deploy.lock"
 readonly TARGET_REF="${1:-origin/${BRANCH}}"
 readonly COMPOSER_CACHE_DIR="/var/cache/praestoworks-qa-composer"
+readonly DB_ENV_FILE="/root/praestoworks-qa-db.env"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "deploy-qa.sh must be run as root, usually via sudo -n." >&2
@@ -27,6 +28,8 @@ flock -n 9 || {
   echo "Another QA deploy is already running." >&2
   exit 1
 }
+mysql_defaults=""
+trap 'if [[ -n "${mysql_defaults}" ]]; then rm -f "${mysql_defaults}"; fi' EXIT
 
 if [[ ! -d "${APP_DIR}/.git" ]]; then
   rm -rf "${APP_DIR}"
@@ -64,6 +67,30 @@ mkdir -p \
   "${APP_DIR}/storage" \
   "${APP_DIR}/user_privileges" \
   "${APP_DIR}/logs"
+
+if [[ -f "${DB_ENV_FILE}" ]] && command -v mariadb >/dev/null 2>&1; then
+  set -a
+  # shellcheck source=/dev/null
+  . "${DB_ENV_FILE}"
+  set +a
+
+  mysql_defaults="$(mktemp)"
+  chmod 600 "${mysql_defaults}"
+  cat > "${mysql_defaults}" <<MYSQL
+[client]
+host=${DB_HOST}
+port=${DB_PORT}
+user=${DB_USER}
+password=${DB_PASSWORD}
+MYSQL
+  mariadb --defaults-extra-file="${mysql_defaults}" "${DB_NAME}" <<'SQL'
+ALTER TABLE vtiger_users
+  ADD COLUMN IF NOT EXISTS secret_key varchar(255) NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS is_use_two_factor_auth tinyint(1) NOT NULL DEFAULT 0;
+SQL
+  rm -f "${mysql_defaults}"
+  mysql_defaults=""
+fi
 
 if id www-data >/dev/null 2>&1; then
   chown -R www-data:www-data "${APP_DIR}"
