@@ -39,6 +39,12 @@ git_app() {
 
 git_app remote set-url origin "${REPO_URL}"
 git_app fetch --prune origin "${BRANCH}"
+
+if [[ -e "${APP_DIR}/composer.lock" ]] &&
+  ! git_app ls-files --error-unmatch composer.lock >/dev/null 2>&1; then
+  rm -f "${APP_DIR}/composer.lock"
+fi
+
 git_app checkout -B "${BRANCH}" "${TARGET_REF}"
 git_app reset --hard "${TARGET_REF}"
 
