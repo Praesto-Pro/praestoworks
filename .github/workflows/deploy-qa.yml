@@ -1,0 +1,24 @@
+name: Deploy QA
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-qa
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy master to QA
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+      - devqa
+
+    steps:
+      - name: Deploy repository checkout on QA server
+        run: sudo -n /usr/local/bin/deploy-praestoworks-qa "${GITHUB_SHA}"
