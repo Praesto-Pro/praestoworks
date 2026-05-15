@@ -7,6 +7,7 @@ readonly RELEASE_ROOT="/srv/praestoworks-qa"
 readonly APP_DIR="${RELEASE_ROOT}/current"
 readonly LOCK_FILE="/var/lock/praestoworks-qa-deploy.lock"
 readonly TARGET_REF="${1:-origin/${BRANCH}}"
+readonly COMPOSER_HOME="/var/cache/praestoworks-qa-composer"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "deploy-qa.sh must be run as root, usually via sudo -n." >&2
@@ -40,6 +41,17 @@ git_app remote set-url origin "${REPO_URL}"
 git_app fetch --prune origin "${BRANCH}"
 git_app checkout -B "${BRANCH}" "${TARGET_REF}"
 git_app reset --hard "${TARGET_REF}"
+
+if [[ -f "${APP_DIR}/composer.json" ]] && command -v composer >/dev/null 2>&1; then
+  mkdir -p "${COMPOSER_HOME}"
+  COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_HOME="${COMPOSER_HOME}" \
+    composer install \
+      --working-dir="${APP_DIR}" \
+      --no-dev \
+      --no-interaction \
+      --prefer-dist \
+      --optimize-autoloader
+fi
 
 if id www-data >/dev/null 2>&1; then
   chown -R www-data:www-data "${APP_DIR}"
