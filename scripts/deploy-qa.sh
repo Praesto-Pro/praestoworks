@@ -59,6 +59,12 @@ if [[ -f "${APP_DIR}/composer.json" ]] && command -v composer >/dev/null 2>&1; t
       --optimize-autoloader
 fi
 
+touch "${APP_DIR}/config.inc.php"
+mkdir -p \
+  "${APP_DIR}/storage" \
+  "${APP_DIR}/user_privileges" \
+  "${APP_DIR}/logs"
+
 if id www-data >/dev/null 2>&1; then
   chown -R www-data:www-data "${APP_DIR}"
 fi
