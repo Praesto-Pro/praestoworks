@@ -165,6 +165,62 @@ class CRMEntity {
 		global $adb, $current_user;
 		global $upload_badext;
 
+		// ==========================================
+                // BEGIN: HEIC to JPEG Conversion Interceptor
+                // ==========================================
+                $checkName = isset($file_details['name']) ? $file_details['name'] : '';
+                if (isset($file_details['original_name']) && $file_details['original_name'] != null) {
+                        $checkName = $file_details['original_name'];
+                }
+
+                if (stripos($checkName, '.heic') !== false) {
+                        $tmpName = isset($file_details['tmp_name']) ? $file_details['tmp_name'] : '';
+                        
+                        if (class_exists('Imagick') && !empty($tmpName) && file_exists($tmpName) && filesize($tmpName) > 0) {
+                                try {
+                                        $imagick = new Imagick();
+                                        $imagick->readImage($tmpName);
+                                        
+                                        // Force rotation fix (HEIC data often includes EXIF orientation attributes)
+                                        $orientation = $imagick->getImageOrientation();
+                                        if ($orientation > 1) {
+                                                $imagick->autoOrient();
+                                        }
+                                        
+                                        $imagick->setImageFormat('jpeg');
+                                        $imagick->setImageCompressionQuality(85); 
+                                        
+                                        $imagick->writeImage($tmpName);
+                                        $imagick->clear();
+                                        $imagick->destroy();
+                                        
+                                        // Rewriting array keys so downstream validation matches the new JPEG properties
+                                        if (isset($file_details['original_name'])) {
+                                                $file_details['original_name'] = str_ireplace('.heic', '.jpg', $file_details['original_name']);
+                                        }
+                                        $file_details['name'] = str_ireplace('.heic', '.jpg', $file_details['name']);
+                                        $file_details['type'] = 'image/jpeg';
+                                        
+                                        $log->debug("HEIC file converted to JPEG successfully inside CRMEntity upload context.");
+                                        
+                                        // Sync global $_FILES array if Vtiger relies on global state down the line
+                                        if (isset($_FILES)) {
+                                                foreach ($_FILES as $key => $fileArray) {
+                                                        if (isset($fileArray['tmp_name']) && $fileArray['tmp_name'] == $tmpName) {
+                                                                $_FILES[$key]['name'] = $file_details['name'];
+                                                                $_FILES[$key]['type'] = 'image/jpeg';
+                                                        }
+                                                }
+                                        }
+                                } catch (Exception $e) {
+                                        $log->debug("HEIC conversion failed: " . $e->getMessage());
+                                }
+                        }
+                }
+                // ==========================================
+                // END: HEIC to JPEG Conversion Interceptor
+                // ==========================================
+
 		$date_var = date("Y-m-d H:i:s");
 
 		//to get the owner id

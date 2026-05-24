@@ -15,7 +15,7 @@
 class Vtiger_Functions {
 
 	const LINK_TO_ANCHOR_TEXT_SYMBOL = '#';
-        static $supportedImageFormats = array('jpeg', 'png', 'jpg', 'pjpeg', 'x-png', 'gif', 'bmp', 'vnd.adobe.photoshop', 'tiff', 'svg+xml', 'x-eps', 'x-dwg', 'vnd.dwg', 'webp', 'x-ms-bmp', 'ico', 'vnd.microsoft.icon', 'x-icon');
+        static $supportedImageFormats = array('jpeg', 'png', 'jpg', 'pjpeg', 'x-png', 'gif', 'bmp', 'vnd.adobe.photoshop', 'tiff', 'svg+xml', 'x-eps', 'x-dwg', 'vnd.dwg', 'webp', 'x-ms-bmp', 'ico', 'vnd.microsoft.icon', 'x-icon', 'heic', 'heif','jfif');
 
 	static function userIsAdministrator($user) {
 		return (isset($user->is_admin) && $user->is_admin == 'on');
