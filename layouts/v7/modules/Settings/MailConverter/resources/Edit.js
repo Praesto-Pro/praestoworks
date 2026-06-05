@@ -10,6 +10,48 @@
 Settings_Vtiger_Index_Js('Settings_MailConverter_Edit_Js', {
 	firstStep: function (e) {
 		var form = jQuery('#mailBoxEditView');
+		var nextButton = form.find('.nextStep');
+		var create = jQuery("#create").val();
+
+		var checkAndRedirect = function(ev) {
+			var serverVal = (form.find('[name="server"]').val() || "").toLowerCase();
+			var scannername = encodeURIComponent(form.find('[name="scannername"]').val() || "");
+			var record = form.find('[name="record"]').val() || "";
+			var scannerOldName = encodeURIComponent(form.find('[name="scannerOldName"]').val() || "");
+			if (serverVal.indexOf("imap.gmail.com") != -1 || serverVal.indexOf("imap.office365.com") != -1) {
+				if (ev) ev.preventDefault();
+				var authservice = (serverVal.indexOf("imap.gmail.com") != -1) ? "Google" : "Office365";
+				var url = "oauth2callback/index.php?authfor=MailConverter&authservice=" + authservice + "&scannername=" + scannername + "&record=" + record + "&scannerOldName=" + scannerOldName + "&create=" + create;
+				window.open(url, '', 'height=600,width=600,channelmode=1');
+				var parentWindow = window;
+				var basePath = parentWindow.location.pathname.substring(0, parentWindow.location.pathname.lastIndexOf('/') + 1);
+				window.afterRedirect = function (recordId) {
+					var redirectUrl;
+					if (recordId) {
+						redirectUrl = parentWindow.location.origin + basePath + 'index.php?module=MailConverter&parent=Settings&view=Edit&mode=step2&create=' + create + '&record=' + recordId;
+					} else {
+						redirectUrl = parentWindow.location.origin + basePath + 'index.php?module=MailConverter&parent=Settings&view=List';
+					}
+					parentWindow.location.href = redirectUrl;
+				};
+				return true;
+			}
+			return false;
+		};
+
+		if (e && e.type === 'click') {
+			if (checkAndRedirect(e)) {
+				return false;
+			}
+		}
+
+		nextButton.removeAttr('onclick');
+		nextButton.on('click', function (ev) {
+			if (checkAndRedirect(ev)) {
+				return false;
+			}
+		});
+
 		var params = {
 			submitHandler: function (form) {
 				var form = jQuery(form);
@@ -21,13 +63,6 @@ Settings_Vtiger_Index_Js('Settings_MailConverter_Edit_Js', {
 
 		form.submit(function (e) {
 			e.preventDefault();
-		});
-
-		jQuery('[name="server"]', form).on('blur', function(ev){
-			if (((this.value||"").toLowerCase()).indexOf("imap.gmail.com") != -1) {
-				// TODO disable submit and clear button
-				location.href = "oauth2callback/index.php?authfor=MailConverter&authservice=Google"
-			}
 		});
 	},
 

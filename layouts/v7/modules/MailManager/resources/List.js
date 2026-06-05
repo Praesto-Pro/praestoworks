@@ -198,18 +198,23 @@ Vtiger_List_Js("MailManager_List_Js", {}, {
 		var settingContainer = jQuery(data);
 		settingContainer.find('#deleteMailboxBtn').click(function (e) {
 			e.preventDefault();
-			app.helper.showProgress(app.vtranslate("JSLBL_Deleting") + "...");
-			var params = {
-				'module': 'MailManager',
-				'view': 'Index',
-				'_operation': 'settings',
-				'_operationarg': 'remove'
-			};
-			app.request.post({ "data": params }).then(function (error, responseData) {
-				app.helper.hideProgress();
-				if (responseData.status) {
-					window.location.reload();
-				}
+			var message = app.vtranslate('JS_DELETE_MAILBOX_SETTINGS_CONFIRMATION');
+			app.helper.showConfirmationBox({ 'message': message }).then(function () {
+				app.helper.showProgress(app.vtranslate("JSLBL_Deleting") + "...");
+				var accountId = settingContainer.find('[name="account_id"]').val();
+				var params = {
+					'module': 'MailManager',
+					'view': 'Index',
+					'_operation': 'settings',
+					'_operationarg': 'remove',
+					'account_id': accountId
+				};
+				app.request.post({ "data": params }).then(function (error, responseData) {
+					app.helper.hideProgress();
+					if (responseData && responseData.status) {
+						window.location.reload();
+					}
+				});
 			});
 		});
 	},
