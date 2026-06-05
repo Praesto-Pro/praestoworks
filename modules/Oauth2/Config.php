@@ -57,15 +57,18 @@ class Oauth2_Config implements ArrayAccess {
                     $config["urlResourceOwnerDetails"] = 'https://graph.microsoft.com/v1.0/me';
                 }
                 if (!isset($config["scopes"])) {
-					
-					if(isset($_REQUEST['authfor']) && ($_REQUEST['authfor'] == 'MailConverter' || $_REQUEST['authfor'] == 'MailManager')){
-						$config["scopes"] = 'offline_access User.Read SMTP.Send Mail.ReadWrite'; /* space separated */
-                	} else if(isset($_REQUEST['authfor']) && ($_REQUEST['authfor'] == 'Login')){
-						$config["scopes"] = 'openid email profile'; /* space separated */
-                	} else {
-						$config["scopes"] = 'offline_access User.Read SMTP.Send'; /* space separated */
-                	}
-					
+                    $authfor = isset($_REQUEST['authfor']) ? $_REQUEST['authfor'] : (isset($_SESSION['oauth2for']) ? $_SESSION['oauth2for'] : '');
+                    if ($authfor == 'MailConverter') {
+                        $config["scopes"] = 'offline_access openid email profile https://outlook.office.com/IMAP.AccessAsUser.All';
+                    } else if ($authfor == 'MailManager') {
+                        $config["scopes"] = 'offline_access User.Read SMTP.Send Mail.ReadWrite'; /* space separated */
+                    } else if ($authfor == 'Login') {
+                        $config["scopes"] = 'openid email profile'; /* space separated */
+                    } else if ($authfor == 'Calendar') {
+                        $config["scopes"] = 'offline_access User.Read Calendars.ReadWrite';
+                    } else {
+                        $config["scopes"] = 'offline_access User.Read SMTP.Send'; /* space separated */
+                    }
                 }
 				break;
         }

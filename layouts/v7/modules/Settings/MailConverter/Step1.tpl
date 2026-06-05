@@ -91,7 +91,7 @@
 			<div class="border1px modal-overlay-footer clearfix">
 				<div class="row clearfix">
 					<div class="textAlignCenter col-lg-12 col-md-12 col-lg-12 ">
-						<button type="submit" class="btn btn-success nextStep" onclick="javascript:Settings_MailConverter_Edit_Js.firstStep()">{vtranslate('LBL_NEXT',$MODULE)}</button>&nbsp;&nbsp;
+						<button type="submit" class="btn btn-success nextStep" onclick="javascript:Settings_MailConverter_Edit_Js.firstStep(event)">{vtranslate('LBL_NEXT',$MODULE)}</button>&nbsp;&nbsp;
 						<a type="reset" class="cancelLink cursorPointer" onclick="javascript:window.history.back();">{vtranslate('LBL_CANCEL',$MODULE)}</a>
 					</div>
 				</div>

@@ -46,6 +46,61 @@ class Oauth2_Usercallback_Callbacks
         }
 
         session_start();
+        vglobal('log')->fatal("Oauth2 Session ID: " . session_id());
+        vglobal('log')->fatal("Oauth2 Cookies: " . print_r($_COOKIE, true));
+
+        if (isset($req['state'])) {
+            $decodedState = (base64_decode($req['state'], true) === false) ? $req['state'] : base64_decode($req['state']);
+            vglobal('log')->fatal("Oauth2 Decoded State: $decodedState");
+            global $site_URL;
+            $parsed_url = parse_url($site_URL);
+            $stateData = preg_split('/\|\||\|/', $decodedState);
+            if (count($stateData) >= 4) {
+                if (empty($req['authfor'])) {
+                    $req['authfor'] = $stateData[2];
+                }
+                if (empty($req['authservice'])) {
+                    $req['authservice'] = $stateData[3];
+                }
+                if (empty($req['scannername']) && isset($stateData[4])) {
+                    $req['scannername'] = $stateData[4];
+                }
+                if (empty($req['record']) && isset($stateData[5])) {
+                    $req['record'] = $stateData[5];
+                }
+                if (empty($req['scannerOldName']) && isset($stateData[6])) {
+                    $req['scannerOldName'] = $stateData[6];
+                }
+                if (empty($req['create']) && isset($stateData[7])) {
+                    $req['create'] = $stateData[7];
+                }
+                $_SESSION['oauth2for'] = $req['authfor'];
+                $_SESSION['oauth2svc'] = $req['authservice'];
+            } else if ($decodedState === $parsed_url['host']) {
+                // Host-only state, use session
+                if (empty($req['authfor'])) {
+                    $req['authfor'] = $_SESSION['oauth2for'];
+                }
+                if (empty($req['authservice'])) {
+                    $req['authservice'] = $_SESSION['oauth2svc'];
+                }
+                vglobal('log')->fatal("Oauth2 State Decoded (Host-only): " . $req['authfor'] . " / " . $req['authservice']);
+            }
+        }
+
+        // Cache parameters in session so they are available to updateTokensFor
+        if (isset($req['scannername'])) {
+            $_SESSION['oauth2_scannername'] = $req['scannername'];
+        }
+        if (isset($req['record'])) {
+            $_SESSION['oauth2_record'] = $req['record'];
+        }
+        if (isset($req['scannerOldName'])) {
+            $_SESSION['oauth2_scannerOldName'] = $req['scannerOldName'];
+        }
+        if (isset($req['create'])) {
+            $_SESSION['oauth2_create'] = $req['create'];
+        }
 
         error_log("Oauth2_Usercallback_Callbacks::handleRequest: " . print_r($req, true));
 
@@ -62,6 +117,9 @@ class Oauth2_Usercallback_Callbacks
                 static::ensureLogin(true);
                 break;
             case "MailManager":
+                static::ensureLogin();
+                break;
+            case "Calendar":
                 static::ensureLogin();
                 break;
             default:
@@ -89,7 +147,13 @@ class Oauth2_Usercallback_Callbacks
             global $site_URL, $current_user;
 
             $parsed_url = parse_url($site_URL);
-            $payload  = $parsed_url['host'] . "||" . $current_user->id . "||" . $req['authfor'] . "||" . $req['authservice'];
+            $scannername = isset($req['scannername']) ? $req['scannername'] : "";
+            $record = isset($req['record']) ? $req['record'] : "";
+            $scannerOldName = isset($req['scannerOldName']) ? $req['scannerOldName'] : "";
+            $create = isset($req['create']) ? $req['create'] : "";
+
+            $payload  = $parsed_url['host'] . "||" . $current_user->id . "||" . $authfor . "||" . $authsvc . "||" . $scannername . "||" . $record . "||" . $scannerOldName . "||" . $create;
+            vglobal('log')->fatal("Oauth2 Step 1 Payload: $payload");
             $state = base64_encode($payload);
 
             $authParams = [
@@ -111,6 +175,10 @@ class Oauth2_Usercallback_Callbacks
             $_SESSION['oauth2for'] = isset($req['authfor']) ? $req['authfor'] : "";
             $_SESSION['oauth2svc'] = isset($req['authservice']) ? $req['authservice'] : "";
             $_SESSION['oauth2_account_id'] = isset($req['account_id']) ? $req['account_id'] : "";
+            $_SESSION['oauth2_scannername'] = isset($req['scannername']) ? $req['scannername'] : "";
+            $_SESSION['oauth2_record'] = isset($req['record']) ? $req['record'] : "";
+            $_SESSION['oauth2_scannerOldName'] = isset($req['scannerOldName']) ? $req['scannerOldName'] : "";
+            $_SESSION['oauth2_create'] = isset($req['create']) ? $req['create'] : "";
 
             // For Google oAuth (prompt is used instead of approval_prompt) which otherwise
             // will end up with bad-request due to conflict.
@@ -138,13 +206,40 @@ class Oauth2_Usercallback_Callbacks
                 $refreshTokenValue = $accessToken->getRefreshToken();
                 $accessTokenExpiresOn = $accessToken->getExpires();
 
-                $resourceOwner = $provider->getResourceOwner($accessToken);
-                $userinfo = $resourceOwner ? $resourceOwner->toArray() : null;
+                 $userinfo = null;
+                 $values = $accessToken->getValues();
+                 if (isset($values['id_token'])) {
+                     $idTokenParts = explode('.', $values['id_token']);
+                     if (count($idTokenParts) >= 2) {
+                         $payload = json_decode(base64_decode(str_replace(array('-', '_'), array('+', '/'), $idTokenParts[1])), true);
+                         if (is_array($payload)) {
+                             $emailVal = isset($payload['email']) ? $payload['email'] : (isset($payload['preferred_username']) ? $payload['preferred_username'] : (isset($payload['upn']) ? $payload['upn'] : ''));
+                             if (!empty($emailVal)) {
+                                 $userinfo = array(
+                                     'email' => $emailVal,
+                                     'mail' => $emailVal,
+                                     'userPrincipalName' => $emailVal
+                                 );
+                             }
+                         }
+                     }
+                 }
 
-                $oauth2for = isset($_SESSION['oauth2for']) ? $_SESSION['oauth2for'] : "";
-                $oauth2svc = isset($_SESSION['oauth2svc']) ? $_SESSION['oauth2svc'] : "";
+                 if (!$userinfo) {
+                     try {
+                         $resourceOwner = $provider->getResourceOwner($accessToken);
+                         $userinfo = $resourceOwner ? $resourceOwner->toArray() : null;
+                     } catch (Exception $e) {
+                         vglobal('log')->fatal("Oauth2 failed to getResourceOwner: " . $e->getMessage());
+                     }
+                 }
+
+                $oauth2for = isset($_SESSION['oauth2for']) ? $_SESSION['oauth2for'] : (isset($req['authfor']) ? $req['authfor'] : "");
+                $oauth2svc = isset($_SESSION['oauth2svc']) ? $_SESSION['oauth2svc'] : (isset($req['authservice']) ? $req['authservice'] : "");
+                vglobal('log')->fatal("Oauth2 Final authfor: $oauth2for, svc: $oauth2svc");
                 $oauth2_account_id = isset($_SESSION['oauth2_account_id']) ? $_SESSION['oauth2_account_id'] : "";
 
+                $response = null;
                 if (($oauth2for == 'OutgoingServer' || $oauth2for == 'MailConverter' || $oauth2for == 'MailManager') && $oauth2svc == 'Office365') {
 
                     $userinfo["email"] = $userinfo['mail'] ? $userinfo['mail'] : $userinfo['userPrincipalName'];
@@ -152,21 +247,12 @@ class Oauth2_Usercallback_Callbacks
                     if ($userinfo["email"]) {
                         $tokens = array("access_token" => $accessTokenValue, "refresh_token" => $refreshTokenValue);
                         $response = static::updateTokensFor($config, $oauth2for, $oauth2svc, $userinfo, $tokens, $accessTokenExpiresOn, $oauth2_account_id);
-
-                        if (!empty($response) && $oauth2for == 'MailConverter') {
-                            unset($_SESSION['oauth2for']);
-                            unset($_SESSION['oauth2state']);
-                            unset($_SESSION['oauth2svc']);
-
-                            echo json_encode(array("scannerid" => $response['id']));
-                            exit;
-                        }
                     } else {
                         error_log("Email was empty in userinfo for Office365.");
                     }
                 } else if ($userinfo["email"] && (!isset($userinfo["email_verified"]) || $userinfo["email_verified"])) {
                     $tokens = array("access_token" => $accessTokenValue, "refresh_token" => $refreshTokenValue);
-                    static::updateTokensFor($config, $oauth2for, $oauth2svc, $userinfo, $tokens, $accessTokenExpiresOn, $oauth2_account_id);
+                    $response = static::updateTokensFor($config, $oauth2for, $oauth2svc, $userinfo, $tokens, $accessTokenExpiresOn, $oauth2_account_id);
                 }
 
 
@@ -179,13 +265,31 @@ class Oauth2_Usercallback_Callbacks
 
                 switch ($oauth2for) {
                     case "OutgoingServer":
-                        header("Location: {$crmBaseUrl}/oauth2callback/redirect.php");
+                        header("Location: {$crmBaseUrl}/oauth2callback/redirect.php?authfor=OutgoingServer");
                         break;
                     case "MailConverter":
-                        header("Location: {$crmBaseUrl}/index.php?parent=Settings&module=MailConverter&view=List");
+                        $create = (isset($_SESSION['oauth2_create']) && !empty($_SESSION['oauth2_create'])) ? $_SESSION['oauth2_create'] : "new";
+                        unset($_SESSION['oauth2_create']);
+                        $scannerId = ($response && is_object($response)) ? $response->scannerid : "";
+
+                        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                            header('Content-Type: application/json');
+                            echo json_encode(array('scannerid' => $scannerId));
+                            exit;
+                        } else {
+                            if ($scannerId) {
+                                header("Location: {$crmBaseUrl}/oauth2callback/redirect.php?authfor=MailConverter&id=" . $scannerId);
+                            } else {
+                                header("Location: {$crmBaseUrl}/oauth2callback/redirect.php?authfor=MailConverter");
+                            }
+                            exit;
+                        }
                         break;
                     case "MailManager":
-                        header("Location: {$crmBaseUrl}/oauth2callback/redirect.php");
+                        header("Location: {$crmBaseUrl}/oauth2callback/redirect.php?authfor=MailManager");
+                        break;
+                    case "Calendar":
+                        header("Location: {$crmBaseUrl}/oauth2callback/redirect.php?authfor=Calendar");
                         break;
                 }
             } catch (Exception $e) {
@@ -201,7 +305,7 @@ class Oauth2_Usercallback_Callbacks
         }
     }
 
-    protected static function updateTokensFor($config, $oauth2for, $oauth2svc, $userinfo, $tokens, $expireson, $oauth2_account_id = "")
+    public static function updateTokensFor($config, $oauth2for, $oauth2svc, $userinfo, $tokens, $expireson, $oauth2_account_id = "")
     {
         $db = PearDatabase::getInstance();
 
@@ -252,11 +356,19 @@ class Oauth2_Usercallback_Callbacks
         } else if ($oauth2for == "MailConverter") {
             require_once "modules/Settings/MailConverter/handlers/MailScannerInfo.php";
 
-            $server = strcasecmp($oauth2svc, "Google") === 0 ? "imap.gmail.com" : "";
+            $server = strcasecmp($oauth2svc, "Google") === 0 ? "imap.gmail.com" : (strcasecmp($oauth2svc, "Office365") === 0 ? "imap.office365.com" : "");
             $proxy  = $server && isset($config["Proxies"]) && isset($config["Proxies"][$server]) ? $config["Proxies"][$server] : "";
 
+            $scannername = (isset($_SESSION['oauth2_scannername']) && !empty($_SESSION['oauth2_scannername'])) ? $_SESSION['oauth2_scannername'] : $server;
+            $recordId = (isset($_SESSION['oauth2_record']) && !empty($_SESSION['oauth2_record'])) ? $_SESSION['oauth2_record'] : "";
+            $scannerOldName = (isset($_SESSION['oauth2_scannerOldName']) && !empty($_SESSION['oauth2_scannerOldName'])) ? $_SESSION['oauth2_scannerOldName'] : "";
+
+            unset($_SESSION['oauth2_scannername']);
+            unset($_SESSION['oauth2_record']);
+            unset($_SESSION['oauth2_scannerOldName']);
+
             $scanner = new Vtiger_MailScannerInfo(sprintf("%f", microtime(true)));
-            $scanner->scannername = $server;
+            $scanner->scannername = $scannername;
             $scanner->server = $server;
             $scanner->protocol = "imap4";
             $scanner->authtype = "XOAUTH2";
@@ -268,7 +380,20 @@ class Oauth2_Usercallback_Callbacks
             $scanner->sslmethod = "validate-cert";
             $scanner->isvalid = 1;
 
-            $oldscanner = new Vtiger_MailScannerInfo($scanner->scannername, true);
+            if (!empty($recordId)) {
+                $scanner->scannerid = $recordId;
+                $oldscanner = new Vtiger_MailScannerInfo($scannerOldName, true);
+            } else {
+                $oldscanner = new Vtiger_MailScannerInfo($scanner->scannername, true);
+            }
+
+            // Connect to verify and get connecturl
+            require_once "modules/Settings/MailConverter/handlers/MailBox.php";
+            $mailBox = new Vtiger_MailBox($scanner);
+            if ($mailBox->connect()) {
+                $scanner->connecturl = $mailBox->_imapurl;
+            }
+
             $oldscanner->update($scanner); return $scanner;
         } else if ($oauth2for == "MailManager") {
 
@@ -305,6 +430,24 @@ class Oauth2_Usercallback_Callbacks
                 if ($proxy) $mailbox->setMailProxy($proxy);
                 $mailbox->save();
              } return true;
+        } else if ($oauth2for == "Calendar") {
+            $log = vglobal('log');
+            $log->fatal("Oauth2 updateTokensFor Calendar: " . $oauth2svc);
+            if ($oauth2svc == 'Office365') {
+                $serviceName = 'Office365Calendar';
+                $tableName = 'vtiger_office365_oauth2';
+                $userid = $_SESSION['authenticated_user_id'];
+                
+                $checkRs = $db->pquery("SELECT 1 FROM $tableName WHERE userid = ? AND service = ?", array($userid, $serviceName));
+                if ($db->num_rows($checkRs)) {
+                    $db->pquery("UPDATE $tableName SET access_token = ?, refresh_token = ? WHERE userid = ? AND service = ?",
+                        array(json_encode($tokens), $tokens['refresh_token'], $userid, $serviceName));
+                } else {
+                    $db->pquery("INSERT INTO $tableName (service, access_token, refresh_token, userid) VALUES (?, ?, ?, ?)",
+                        array($serviceName, json_encode($tokens), $tokens['refresh_token'], $userid));
+                }
+            }
+            return true;
         }
     }
 }

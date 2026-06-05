@@ -76,12 +76,72 @@ class Vtiger_MailBox {
 		$mailboxsettings = $this->_mailboxsettings;
 		$isconnected = false;
 
+		if ($mailboxsettings['authtype'] == 'XOAUTH2') {
+			$expiredon = time();
+			if ($mailboxsettings['authexpireson'] && $mailboxsettings['authexpireson'] <= $expiredon + 60) {
+				$cfgfile = "oauth2callback/config.oauth2.php";
+				if (file_exists($cfgfile)) {
+					$cfgdata = require $cfgfile;
+					require_once "modules/Oauth2/Config.php";
+					$config = Oauth2_Config::loadConfig($cfgdata);
+					$svc = null;
+					if (stripos($mailboxsettings["server"], "gmail.com") !== false) {
+						$svc = "Google";
+					} else if (stripos($mailboxsettings["server"], "office365.com") !== false) {
+						$svc = "Office365";
+					}
+					if ($svc) {
+						try {
+							$cfg = $config->getProviderConfig($svc);
+							$provider = new \League\OAuth2\Client\Provider\GenericProvider($cfg);
+							$tokens = json_decode($mailboxsettings["password"], true);
+							if (is_array($tokens) && isset($tokens['refresh_token'])) {
+								$access_token = $provider->getAccessToken('refresh_token', [
+									'refresh_token' => $tokens['refresh_token']
+								]);
+								$tokens['access_token'] = $access_token->getToken();
+								$newexpireson = $access_token->getExpires();
+
+								require_once 'include/utils/encryption.php';
+								$e = new Encryption();
+								$newpassword = $e->encrypt(json_encode($tokens));
+
+								$db = PearDatabase::getInstance();
+								$db->pquery(
+									"UPDATE vtiger_mailscanner SET password=?, auth_expireson=? WHERE scannerid=?",
+									array($newpassword, $newexpireson, $this->_scannerinfo->scannerid)
+								);
+
+								$this->_mailboxsettings['password'] = json_encode($tokens);
+								$this->_mailboxsettings['authexpireson'] = $newexpireson;
+								$this->_scannerinfo->password = json_encode($tokens);
+								$this->_scannerinfo->authexpireson = $newexpireson;
+								$mailboxsettings = $this->_mailboxsettings;
+							}
+						} catch (Exception $ex) {
+							global $log;
+							if ($log) $log->fatal("Failed to auto-refresh token: " . $ex->getMessage());
+						}
+					}
+				}
+			}
+		}
+
 		// Connect using last successful url
 		if($mailboxsettings['connecturl']) {
 			$connecturl = $mailboxsettings['connecturl'];
 			if($mailboxsettings['readonly']) $connecturl = str_replace("}", "/readonly}", $connecturl);
 			$this->log("Trying to connect using connecturl $connecturl$folder", true);
-			$imap = @imap_open("$connecturl$folder", $mailboxsettings['username'], $mailboxsettings['password']);
+
+			$passwordVal = $mailboxsettings['password'];
+			if ($mailboxsettings['authtype'] == 'XOAUTH2') {
+				$tokens = json_decode($passwordVal, true);
+				if (is_array($tokens) && isset($tokens['access_token'])) {
+					$passwordVal = $tokens['access_token'];
+				}
+			}
+
+			$imap = @imap_open("$connecturl$folder", $mailboxsettings['username'], $passwordVal);
 			if($imap) {
 				$this->_imapurl = $connecturl;
 				$this->_imapfolder = $folder;
@@ -95,11 +155,18 @@ class Vtiger_MailBox {
 			$connectString = '{'. $mailboxsettings['server'].':'.$mailboxsettings['port'].'/'.$mailboxsettings['protocol'].'/'.$mailboxsettings['ssltype'].'/'.$mailboxsettings['sslmethod'] .$mailboxsettings['readonly'] ."}";
 			$connectStringShort = '{'. $mailboxsettings['server'].'/'.$mailboxsettings['protocol'].':'.$mailboxsettings['port'] .$mailboxsettings['readonly'] ."}";
 
-			if ($mailboxsettings['authtype'] == 'XOAUTH2' && $mailboxsettings['mailproxy']) {
-				$connectString = sprintf("{%s/notls/novalidate-cert}", $mailboxsettings['mailproxy']);
-				$connectStringShort = $connectString;
+			if ($mailboxsettings['authtype'] == 'XOAUTH2') {
+				if ($mailboxsettings['mailproxy']) {
+					$connectString = sprintf("{%s/notls/novalidate-cert}", $mailboxsettings['mailproxy']);
+					$connectStringShort = $connectString;
+				} else {
+					$connectString = '{'. $mailboxsettings['server'].':'.$mailboxsettings['port'].'/'.$mailboxsettings['protocol'].'/'.$mailboxsettings['ssltype'].'/'.$mailboxsettings['sslmethod'].'/oauth2'.$mailboxsettings['readonly'] ."}";
+					$connectStringShort = '{'. $mailboxsettings['server'].'/'.$mailboxsettings['protocol'].'/'.$mailboxsettings['ssltype'].'/'.$mailboxsettings['sslmethod'].'/oauth2:'.$mailboxsettings['port'] .$mailboxsettings['readonly'] ."}";
+				}
 				$tokens = json_decode($mailboxsettings["password"], true);
-				$mailboxsettings["password"] = $tokens["access_token"];
+				if (is_array($tokens) && isset($tokens["access_token"])) {
+					$mailboxsettings["password"] = $tokens["access_token"];
+				}
 			}
 
 			$this->log("Trying to connect using $connectString$folder", true);

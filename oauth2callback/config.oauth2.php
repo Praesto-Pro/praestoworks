@@ -6,6 +6,7 @@
  * The Initial Developer of the Original Code is vtiger.
  * Portions created by vtiger are Copyright (C) vtiger.
  * All Rights Reserved.
+ *
  ************************************************************************************/
 
 return array(
@@ -27,6 +28,8 @@ return array(
     // https://code.vtiger.com/vtiger/vtigercrm/-/issues/1914
     // Update host:port details here.
     "Proxies" => array(
-        "imap.gmail.com" => "127.0.0.1:993"
+        "imap.gmail.com" => "127.0.0.1:993",
+        "imap.office365.com" => "127.0.0.1:1993",
+        "outlook.office365.com" => "127.0.0.1:1993"
     )
 );
