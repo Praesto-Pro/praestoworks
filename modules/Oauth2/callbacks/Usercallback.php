@@ -387,14 +387,18 @@ class Oauth2_Usercallback_Callbacks
                 $oldscanner = new Vtiger_MailScannerInfo($scanner->scannername, true);
             }
 
+            $oldscanner->update($scanner);
+            $scanner->scannerid = $oldscanner->scannerid;
+
             // Connect to verify and get connecturl
             require_once "modules/Settings/MailConverter/handlers/MailBox.php";
             $mailBox = new Vtiger_MailBox($scanner);
             if ($mailBox->connect()) {
                 $scanner->connecturl = $mailBox->_imapurl;
+                $oldscanner->update($scanner);
             }
 
-            $oldscanner->update($scanner); return $scanner;
+            return $scanner;
         } else if ($oauth2for == "MailManager") {
 
             require_once "modules/MailManager/models/Mailbox.php";
