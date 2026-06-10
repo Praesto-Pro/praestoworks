@@ -1,0 +1,87 @@
+<?php
+/*+**********************************************************************************
+ * The contents of this file are subject to the vtiger CRM Public License Version 1.1
+ * ("License"); You may not use this file except in compliance with the License
+ * The Original Code is: vtiger CRM Open Source
+ * The Initial Developer of the Original Code is vtiger.
+ * Portions created by vtiger are Copyright (C) vtiger.
+ * All Rights Reserved.
+ ************************************************************************************/
+
+class Calendar_Office365Sync_Action extends Vtiger_Action_Controller {
+
+    public function checkPermission(Vtiger_Request $request) {
+        return true;
+    }
+
+    public function validateRequest(Vtiger_Request $request) {
+        return true;
+    }
+
+    public function process(Vtiger_Request $request) {
+        // Force include the module's controller and helpers
+        require_once 'modules/Office365/helpers/Utils.php';
+        require_once 'modules/Office365/controllers/Calendar.php';
+        require_once 'modules/Office365/connectors/Oauth2.php';
+        require_once 'modules/Office365/connectors/Calendar.php';
+        require_once 'modules/Office365/models/SyncRecord.php';
+
+        $sourceModule = $request->get('sourcemodule');
+        if (!$sourceModule) $sourceModule = 'Calendar';
+
+        $user = Users_Record_Model::getCurrentUserModel();
+        $controller = new Office365_Calendar_Controller($user);
+        $syncDirection = Office365_Utils_Helper::getSyncDirectionForUser($user, 'Calendar');
+
+        $records = array();
+        if (Office365_Utils_Helper::checkSyncEnabled('Calendar', $user)) {
+            $records = $controller->synchronize(true, $syncDirection[0], $syncDirection[1] ?? null);
+        }
+
+        $countRecords = $this->getSyncRecordsCount($records);
+
+        $viewer = Vtiger_Viewer::getInstance();
+        $viewer->assign('MODULE_NAME', 'Office365');
+        $viewer->assign('RECORDS', $countRecords);
+        $viewer->assign('SYNCTIME', Office365_Utils_Helper::getLastSyncTime($sourceModule));
+        $viewer->assign('SOURCEMODULE', $sourceModule);
+
+        // Get HTML content
+        $html = $viewer->view('ContentDetails.tpl', 'Office365', true);
+
+        $response = new Vtiger_Response();
+        $response->setResult($html);
+        $response->emit();
+    }
+
+    public function getSyncRecordsCount($syncRecords) {
+        $countRecords = array(
+            'vtiger' => array('update' => 0, 'create' => 0, 'delete' => 0),
+            'office365' => array('update' => 0, 'create' => 0, 'delete' => 0)
+        );
+        foreach ($syncRecords as $key => $records) {
+            if ($key == 'push') {
+                foreach ($records as $record) {
+                    foreach ($record as $type => $data) {
+                        if ($type == 'source') {
+                            if ($data->getMode() == WSAPP_SyncRecordModel::WSAPP_UPDATE_MODE) $countRecords['vtiger']['update']++;
+                            elseif ($data->getMode() == WSAPP_SyncRecordModel::WSAPP_CREATE_MODE) $countRecords['vtiger']['create']++;
+                            elseif ($data->getMode() == WSAPP_SyncRecordModel::WSAPP_DELETE_MODE) $countRecords['vtiger']['delete']++;
+                        }
+                    }
+                }
+            } else if ($key == 'pull') {
+                foreach ($records as $type => $record) {
+                    foreach ($record as $type => $data) {
+                        if ($type == 'target') {
+                            if ($data->getMode() == WSAPP_SyncRecordModel::WSAPP_UPDATE_MODE) $countRecords['office365']['update']++;
+                            elseif ($data->getMode() == WSAPP_SyncRecordModel::WSAPP_CREATE_MODE) $countRecords['office365']['create']++;
+                            elseif ($data->getMode() == WSAPP_SyncRecordModel::WSAPP_DELETE_MODE) $countRecords['office365']['delete']++;
+                        }
+                    }
+                }
+            }
+        }
+        return $countRecords;
+    }
+}
