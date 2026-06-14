@@ -27,7 +27,11 @@ class Office365_Calendar_Connector extends WSAPP_TargetConnector {
     }
 
     protected function makeGraphRequest($endpoint, $method = 'GET', $data = null) {
-        $url = $this->baseUrl . $endpoint;
+        if (strpos($endpoint, 'http') === 0) {
+            $url = $endpoint;
+        } else {
+            $url = $this->baseUrl . $endpoint;
+        }
         // Final safety check for spaces in the final URL
         $url = str_replace(' ', '%20', $url);
         $headers = [
@@ -66,14 +70,35 @@ class Office365_Calendar_Connector extends WSAPP_TargetConnector {
         if (!$user) $user = Users_Record_Model::getCurrentUserModel();
         $lastSyncTime = Office365_Utils_Helper::getSyncTime('Calendar', $user);
         
-        $startDateTime = date('Y-m-d\TH:i:s\Z', strtotime('-30 days'));
+        $syncStartFrom = Office365_Utils_Helper::getSyncStartFrom('Calendar', $user);
+        if ($syncStartFrom) {
+            $startDateTime = date('Y-m-d\TH:i:s\Z', strtotime($syncStartFrom));
+        } else {
+            $startDateTime = date('Y-m-d\TH:i:s\Z', strtotime('-30 days'));
+        }
         $endDateTime = date('Y-m-d\TH:i:s\Z', strtotime('+90 days'));
         
         $url = '/me/calendar/calendarView?startDateTime=' . $startDateTime . '&endDateTime=' . $endDateTime;
+        $allEvents = array();
+        $pageLimit = 100; // safety limit to prevent infinite loops
         
-        $response = $this->makeGraphRequest($url);
-        file_put_contents('logs/sync_debug.log', "Graph API calendarView Response count: " . (is_array($response) && isset($response['value']) ? count($response['value']) : 0) . "\n", FILE_APPEND);
-        if (!$response || !isset($response['value'])) return array();
+        while ($url && $pageLimit > 0) {
+            $response = $this->makeGraphRequest($url);
+            $count = (is_array($response) && isset($response['value'])) ? count($response['value']) : 0;
+            file_put_contents('logs/sync_debug.log', "Graph API calendarView Response count: $count\n", FILE_APPEND);
+            if (!$response || !isset($response['value'])) break;
+            
+            $allEvents = array_merge($allEvents, $response['value']);
+            
+            if (isset($response['@odata.nextLink'])) {
+                $url = $response['@odata.nextLink'];
+                $pageLimit--;
+            } else {
+                $url = null;
+            }
+        }
+        
+        if (empty($allEvents)) return array();
 
         $lastSyncTimestamp = 0;
         if ($lastSyncTime) {
@@ -81,9 +106,16 @@ class Office365_Calendar_Connector extends WSAPP_TargetConnector {
             file_put_contents('logs/sync_debug.log', "Filtering events modified since last sync: $lastSyncTime (timestamp $lastSyncTimestamp)\n", FILE_APPEND);
         }
 
-        // Fetch all mapped Office365 client IDs to skip modification filtering for newly discovered occurrences
+        // Fetch mapped Office365 client IDs for this user only, to skip modification filtering for already-synced events
         $db = PearDatabase::getInstance();
-        $mappingQuery = $db->pquery("SELECT clientid FROM vtiger_wsapp_recordmapping WHERE clientid LIKE 'AQMk%'", array());
+        $userId = $user->id;
+        $mappingQuery = $db->pquery(
+            "SELECT rm.clientid FROM vtiger_wsapp_recordmapping rm
+             INNER JOIN vtiger_wsapp app ON rm.appid = app.appid
+             INNER JOIN vtiger_wsapp_sync_state ss ON app.appkey = JSON_UNQUOTE(JSON_EXTRACT(ss.stateencodedvalues, '$.synctrackerid'))
+             WHERE ss.userid = ? AND ss.name = 'Vtiger_Office365Calendar'",
+            array($userId)
+        );
         $mappedIds = array();
         while ($row = $db->fetchByAssoc($mappingQuery)) {
             if (!empty($row['clientid'])) {
@@ -92,7 +124,7 @@ class Office365_Calendar_Connector extends WSAPP_TargetConnector {
         }
 
         $records = array();
-        foreach ($response['value'] as $event) {
+        foreach ($allEvents as $event) {
             $eventId = $event['id'];
             
             // If the event is already mapped, only pull if modified since the last sync time
@@ -186,7 +218,7 @@ class Office365_Calendar_Connector extends WSAPP_TargetConnector {
         $records = array();
         foreach ($vtEvents as $vtEvent) {
             $event = array();
-            if ($vtEvent->getMode() == WSAPP_SyncRecordModel::WSAPP_UPDATE_MODE) {
+            if ($vtEvent->getMode() == WSAPP_SyncRecordModel::WSAPP_UPDATE_MODE || $vtEvent->getMode() == WSAPP_SyncRecordModel::WSAPP_DELETE_MODE) {
                 $event['id'] = $vtEvent->get('_id');
             }
 

@@ -44,6 +44,14 @@ class Users_Record_Model extends Vtiger_Record_Model {
         return $this;
     }
 
+	public function __get($key) {
+		return $this->get($key);
+	}
+
+	public function __isset($key) {
+		return $this->has($key);
+	}
+
 	/**
 	 * Function to get the Detail View url for the record
 	 * @return <String> - Record Detail View Url

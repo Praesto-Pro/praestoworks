@@ -43,6 +43,43 @@ class Vtiger_Office365Sync_Action extends Vtiger_Action_Controller {
             return;
         }
 
+        if ($operation === 'save_settings') {
+            $db = PearDatabase::getInstance();
+            $user = Users_Record_Model::getCurrentUserModel();
+            $userId = $user->getId();
+            
+            $syncEnabled = intval($request->get('sync_enabled'));
+            $syncDirection = $request->get('sync_direction');
+            $syncStartFrom = $request->get('sync_start_from');
+            
+            if (!empty($syncStartFrom)) {
+                $syncStartFrom = date('Y-m-d', strtotime($syncStartFrom));
+            } else {
+                $syncStartFrom = null;
+            }
+            
+            $sourceModule = $request->get('sourcemodule');
+            if (!$sourceModule) $sourceModule = 'Calendar';
+            
+            $check = $db->pquery("SELECT 1 FROM vtiger_office365_sync_settings WHERE user=? AND module=?", array($userId, $sourceModule));
+            if ($db->num_rows($check) > 0) {
+                $db->pquery(
+                    "UPDATE vtiger_office365_sync_settings SET sync_start_from=?, direction=?, enable_cron=? WHERE user=? AND module=?",
+                    array($syncStartFrom, $syncDirection, $syncEnabled, $userId, $sourceModule)
+                );
+            } else {
+                $db->pquery(
+                    "INSERT INTO vtiger_office365_sync_settings (user, module, direction, sync_start_from, enable_cron) VALUES (?,?,?,?,?)",
+                    array($userId, $sourceModule, $syncDirection, $syncStartFrom, $syncEnabled)
+                );
+            }
+            
+            $response = new Vtiger_Response();
+            $response->setResult(array('success' => true));
+            $response->emit();
+            return;
+        }
+
         $sourceModule = $request->get('sourcemodule');
         if (!$sourceModule) $sourceModule = 'Calendar';
 
