@@ -364,14 +364,17 @@ window.app = (function () {
 			}
 
 			var translatedString = key;
-			if (app.languageString[key] !== undefined) {
+			if (app.languageString && app.languageString[key] !== undefined) {
 				translatedString = app.languageString[key];
 			} else {
 				var strings = jQuery('#js_strings').text();
 				if (strings != '') {
-					app.languageString = JSON.parse(strings);
-					if (key in app.languageString) {
-						translatedString = app.languageString[key];
+					var parsedStrings = JSON.parse(strings);
+					if (parsedStrings) {
+						app.languageString = parsedStrings;
+						if (key in app.languageString) {
+							translatedString = app.languageString[key];
+						}
 					}
 				}
 			}

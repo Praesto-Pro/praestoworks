@@ -97,6 +97,30 @@
                     </div>
                 {/if}
             </div>
+            <div style="margin-top: 15px; margin-bottom: 20px; border: 1px solid #e2e8f0; background-color: #f8fafc; padding: 15px; border-radius: 8px; text-align: left; max-width: 320px; margin-left: auto; margin-right: auto;">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="sync_enabled" style="font-weight: 600; font-size: 13px; color: #475569; display: inline-block; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="sync_enabled" name="sync_enabled" {if $SYNC_ENABLED}checked{/if} style="margin-right: 8px; vertical-align: middle; width: 16px; height: 16px; cursor: pointer;" />
+                        Enable Calendar Sync
+                    </label>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="sync_direction" style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Sync Direction:</label>
+                    <select id="sync_direction" class="inputElement" style="width: 100%; height: 32px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 13px; box-sizing: border-box; background-color: white;">
+                        <option value="11" {if $SYNC_DIRECTION eq '11'}selected{/if}>Sync both ways</option>
+                        <option value="10" {if $SYNC_DIRECTION eq '10'}selected{/if}>Sync Vtiger to Office365 only</option>
+                        <option value="01" {if $SYNC_DIRECTION eq '01'}selected{/if}>Sync Office365 to Vtiger only</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="sync_start_from" style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Sync Start Date:</label>
+                    <input type="date" class="inputElement" id="sync_start_from" name="sync_start_from" value="{$SYNC_START_FROM}" style="width: 100%; height: 32px; padding: 5px 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 13px; box-sizing: border-box;" />
+                    <small style="margin-top: 4px; display: block; font-size: 11px; color: #64748b; line-height: 1.3;">Only events modified on or after this date will be synchronized.</small>
+                </div>
+                <button type="button" class="btn btn-success btn-xs btn-office365-save-settings" data-sourcemodule="{$SOURCEMODULE}" style="font-weight: 600; padding: 4px 10px; background-color: #2b984b; border-color: #278943; color: white;">
+                    <i class="fa fa-save"></i> Save Settings
+                </button>
+            </div>
             <button type="button" class="btn btn-office365" id="startSyncBtn" data-sourcemodule="{$SOURCEMODULE}">
                 <i class="fa fa-play"></i> {vtranslate('LBL_SYNC_NOW', $MODULE_NAME)}
             </button>
@@ -135,10 +159,15 @@
                     app.helper.showProgress();
                 }
 
-                var url = "index.php?module=Vtiger&action=Office365Sync&operation=sync&sourcemodule=" + sourcemodule;
-                console.log("Calling URL: " + url);
+                var params = {
+                    'module': 'Vtiger',
+                    'action': 'Office365Sync',
+                    'operation': 'sync',
+                    'sourcemodule': sourcemodule
+                };
+                console.log("Calling sync with params:", params);
                 
-                AppConnector.request(url).then(function(data) {
+                AppConnector.request(params).then(function(data) {
                     console.log("Sync response received.");
                     if (typeof app !== 'undefined' && app.helper) {
                         app.helper.hideProgress();
@@ -216,8 +245,12 @@
 
             var afterRedirect = function(sourcemodule) {
                 console.log("afterRedirect called");
-                var url = "index.php?module=Office365&view=List&sourcemodule=" + sourcemodule;
-                AppConnector.request(url).then(function(data) {
+                var params = {
+                    'module': 'Office365',
+                    'view': 'List',
+                    'sourcemodule': sourcemodule
+                };
+                AppConnector.request(params).then(function(data) {
                     var parsed = jq('<div>' + data + '</div>');
                     var contents = parsed.find('#office365SyncContents');
                     if (contents.length > 0) {
@@ -299,8 +332,13 @@
                         app.helper.showProgress();
                     }
                     
-                    var url = "index.php?module=Vtiger&action=Office365Sync&operation=disconnect&sourcemodule=" + sourcemodule;
-                    AppConnector.request(url).then(function(data) {
+                    var params = {
+                        'module': 'Vtiger',
+                        'action': 'Office365Sync',
+                        'operation': 'disconnect',
+                        'sourcemodule': sourcemodule
+                    };
+                    AppConnector.request(params).then(function(data) {
                         console.log("Disconnect successful.");
                         try {
                             if (typeof app !== 'undefined' && app.helper) {
@@ -343,6 +381,70 @@
                         performDisconnect();
                     }
                 }
+            });
+
+            jq(document).off('click', '.btn-office365-save-settings').on('click', '.btn-office365-save-settings', function(e) {
+                if (e.originalEvent && e.originalEvent.office365Handled) {
+                    return;
+                }
+                if (e.originalEvent) {
+                    e.originalEvent.office365Handled = true;
+                }
+                
+                var btnSave = jq(this);
+                var sourcemodule = btnSave.data('sourcemodule');
+                var syncEnabledVal = jq('#sync_enabled').is(':checked') ? 1 : 0;
+                var syncDirectionVal = jq('#sync_direction').val();
+                var syncStartVal = jq('#sync_start_from').val();
+                
+                btnSave.prop('disabled', true).html("<i class='fa fa-spinner fa-spin'></i> Saving...");
+                if (typeof app !== 'undefined' && app.helper) {
+                    app.helper.showProgress();
+                }
+                
+                var params = {
+                    'module': 'Vtiger',
+                    'action': 'Office365Sync',
+                    'operation': 'save_settings',
+                    'sourcemodule': sourcemodule,
+                    'sync_enabled': syncEnabledVal,
+                    'sync_direction': syncDirectionVal,
+                    'sync_start_from': syncStartVal
+                };
+                
+                console.log("Sending save settings request with params:", params);
+                
+                AppConnector.request(params).then(function(data) {
+                    console.log("Settings saved successfully callback entered. Data:", data);
+                    try {
+                        if (typeof app !== 'undefined' && app.helper) {
+                            console.log("Hiding progress bar and showing notification...");
+                            app.helper.hideProgress();
+                            app.helper.showSuccessNotification({'message': 'Sync settings saved successfully!'});
+                        }
+                    } catch (e) {
+                        console.error("Error in app.helper notification/progress:", e);
+                    }
+                    
+                    try {
+                        console.log("Resetting button state. Current btnSave:", btnSave, "length:", btnSave.length);
+                        btnSave.prop('disabled', false).html("<i class='fa fa-save'></i> Save Settings");
+                        console.log("Button reset complete. New disabled prop:", btnSave.prop('disabled'), "HTML:", btnSave.html());
+                    } catch (e) {
+                        console.error("Error resetting button:", e);
+                    }
+                }).fail(function(err) {
+                    console.error("Save settings failed", err);
+                    try {
+                        if (typeof app !== 'undefined' && app.helper) {
+                            app.helper.hideProgress();
+                        }
+                    } catch (e) {}
+                    try {
+                        btnSave.prop('disabled', false).html("<i class='fa fa-save'></i> Save Settings");
+                    } catch (e) {}
+                    alert("Failed to save sync settings. Please try again.");
+                });
             });
 
             jq(document).off('click.office365-close').on('click.office365-close', '.modal-header .close, #closeSyncBtn', function(e) {

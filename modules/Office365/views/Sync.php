@@ -84,6 +84,9 @@ class Office365_Sync_View extends Vtiger_PopupAjax_View {
         $viewer->assign('FIRSTTIME', $firsttime);
         $viewer->assign('CONNECTED_EMAIL', $oauth2->getConnectedEmail());
         $viewer->assign('SYNCTIME', Office365_Utils_Helper::getLastSyncTime($sourceModule));
+        $viewer->assign('SYNC_START_FROM', Office365_Utils_Helper::getSyncStartFrom($sourceModule));
+        $viewer->assign('SYNC_ENABLED', Office365_Utils_Helper::checkSyncEnabled($sourceModule));
+        $viewer->assign('SYNC_DIRECTION', Office365_Utils_Helper::getSyncDirectionValue($sourceModule));
         $viewer->assign('SOURCEMODULE', $sourceModule);
         $viewer->view('Contents.tpl', $request->getModule());
     }

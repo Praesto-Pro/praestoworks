@@ -877,7 +877,7 @@ var app = {
 		var params = [].slice.apply(arguments);
 		params.shift();
 
-		if(app.languageString[key] != undefined) {
+		if(app.languageString && app.languageString[key] != undefined) {
 			var translatedString = app.languageString[key];
 			if(params.length > 0) {
 				var replaceRegex = new RegExp("(%s)", "g");
@@ -892,19 +892,22 @@ var app = {
 		} else {
 			var strings = jQuery('#js_strings').text();
 			if(strings != '') {
-				app.languageString = JSON.parse(strings);
-				if(key in app.languageString){
-					var translatedString = app.languageString[key];
-					if(params.length > 0) {
-						var replaceRegex = new RegExp("(%s)", "g");
-						var paramsPointer = 0;
-						translatedString = translatedString.replace(replaceRegex,function(){
-							var string = params[paramsPointer];
-							paramsPointer++;
-							return string;
-						})
+				var parsedStrings = JSON.parse(strings);
+				if(parsedStrings) {
+					app.languageString = parsedStrings;
+					if(key in app.languageString){
+						var translatedString = app.languageString[key];
+						if(params.length > 0) {
+							var replaceRegex = new RegExp("(%s)", "g");
+							var paramsPointer = 0;
+							translatedString = translatedString.replace(replaceRegex,function(){
+								var string = params[paramsPointer];
+								paramsPointer++;
+								return string;
+							})
+						}
+						return translatedString;
 					}
-					return translatedString;
 				}
 			}
 		}

@@ -63,4 +63,24 @@ class Office365_Utils_Helper {
         }
         return array('push', 'pull');
     }
+
+    public static function getSyncStartFrom($module, $user = false) {
+        $db = PearDatabase::getInstance();
+        if (!$user) $user = Users_Record_Model::getCurrentUserModel();
+        $result = $db->pquery("SELECT sync_start_from FROM vtiger_office365_sync_settings WHERE user=? AND module=?", array($user->getId(), $module));
+        if ($db->num_rows($result) > 0) {
+            return $db->query_result($result, 0, 'sync_start_from');
+        }
+        return false;
+    }
+
+    public static function getSyncDirectionValue($module, $user = false) {
+        $db = PearDatabase::getInstance();
+        if (!$user) $user = Users_Record_Model::getCurrentUserModel();
+        $result = $db->pquery("SELECT direction FROM vtiger_office365_sync_settings WHERE user=? AND module=?", array($user->getId(), $module));
+        if ($db->num_rows($result) > 0) {
+            return $db->query_result($result, 0, 'direction');
+        }
+        return '11';
+    }
 }
