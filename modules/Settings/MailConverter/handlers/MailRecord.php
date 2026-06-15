@@ -94,11 +94,16 @@ class Vtiger_MailRecord {
 		if($this->_plainmessage) {
 			$bodytext = $this->_plainmessage;
 		} else if($this->_isbodyhtml) {
+			// Strip style and script blocks with their contents first
+			$bodytext = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $bodytext);
+			$bodytext = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $bodytext);
 			// TODO This conversion can added multiple lines if 
 			// content is displayed directly on HTML page
 			$bodytext = preg_replace("/<br>/", "\n", $bodytext);
 			$bodytext = strip_tags($bodytext);
 		}
+		$bodytext = trim($bodytext);
+		$bodytext = preg_replace("/(\r?\n){3,}/", "\n\n", $bodytext);
 		return $bodytext;
 	}
 
@@ -145,7 +150,7 @@ class Vtiger_MailRecord {
 		if ($iconv_function === NULL) $iconv_function = function_exists('iconv');
 
 		if($mb_function) {
-			// if source charset is not determined or not-encoded as per imap_mime_decode
+			// if source charset is not encoded as per imap_mime_decode
 			if(!$from || $from == 'default') $from = mb_detect_encoding($input);
 
 			if(strtolower(trim($to)) == strtolower(trim($from))) {                         
