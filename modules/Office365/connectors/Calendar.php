@@ -192,12 +192,12 @@ class Office365_Calendar_Connector extends WSAPP_TargetConnector {
             
             // Format dates
             $start = new DateTime($data['start']['dateTime'], new DateTimeZone($data['start']['timeZone']));
-            $start->setTimezone(new DateTimeZone($user->get('time_zone')));
+            $start->setTimezone(new DateTimeZone('UTC'));
             $entity['date_start'] = $start->format('Y-m-d');
             $entity['time_start'] = $start->format('H:i:s');
             
             $end = new DateTime($data['end']['dateTime'], new DateTimeZone($data['end']['timeZone']));
-            $end->setTimezone(new DateTimeZone($user->get('time_zone')));
+            $end->setTimezone(new DateTimeZone('UTC'));
             $entity['due_date'] = $end->format('Y-m-d');
             $entity['time_end'] = $end->format('H:i:s');
             
@@ -227,14 +227,13 @@ class Office365_Calendar_Connector extends WSAPP_TargetConnector {
             $event['body'] = array('contentType' => 'text', 'content' => $vtEvent->get('description'));
             $event['location'] = array('displayName' => $vtEvent->get('location'));
             
-            $userTz = $user->get('time_zone');
             $event['start'] = array(
                 'dateTime' => $vtEvent->get('date_start') . 'T' . $vtEvent->get('time_start'),
-                'timeZone' => $userTz
+                'timeZone' => 'UTC'
             );
             $event['end'] = array(
                 'dateTime' => $vtEvent->get('due_date') . 'T' . $vtEvent->get('time_end'),
-                'timeZone' => $userTz
+                'timeZone' => 'UTC'
             );
             $event['sensitivity'] = (strtolower($vtEvent->get('visibility')) == 'private') ? 'private' : 'normal';
 
