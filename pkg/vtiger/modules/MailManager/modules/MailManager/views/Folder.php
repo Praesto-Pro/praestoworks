@@ -124,7 +124,7 @@ class MailManager_Folder_View extends MailManager_Abstract_View {
 	 * @return string
 	 */
 	public static function getSearchOptions() {
-		$options = array('SUBJECT'=>'SUBJECT','TO'=>'TO','BODY'=>'BODY','BCC'=>'BCC','CC'=>'CC','FROM'=>'FROM','DATE'=>'ON');
+		$options = array('FROM'=>'FROM','SUBJECT'=>'SUBJECT','TO'=>'TO','BODY'=>'BODY','BCC'=>'BCC','CC'=>'CC','DATE'=>'ON');
 		return $options;
 	}
     public function validateRequest(Vtiger_Request $request) {
