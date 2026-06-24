@@ -27,7 +27,7 @@ Vtiger_List_Js("MailManager_List_Js", {}, {
 			app.helper.hideProgress();
 			self.getContainer().find('#folders_list').html(responseData);
 			self.getContainer().find('#folders_list').mCustomScrollbar({
-				setHeight: 550,
+				setHeight: "calc(100vh - 180px)",
 				autoExpandScrollbar: true,
 				scrollInertia: 200,
 				autoHideScrollbar: true,
@@ -740,7 +740,7 @@ Vtiger_List_Js("MailManager_List_Js", {}, {
 	registerScrollForMailList: function () {
 		var self = this;
 		self.getContainer().find('#emailListDiv').mCustomScrollbar({
-			setHeight: 600,
+			setHeight: "100%",
 			autoExpandScrollbar: true,
 			scrollInertia: 200,
 			autoHideScrollbar: true,

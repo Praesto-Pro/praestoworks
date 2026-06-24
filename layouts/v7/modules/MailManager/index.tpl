@@ -19,6 +19,55 @@
             </center>
         </div>
     {else}
+        <style>
+            /* Lock general page scroll when Mail Manager is open */
+            html, body {
+                overflow: hidden !important;
+                height: 100% !important;
+            }
+            #page {
+                height: 100vh !important;
+                box-sizing: border-box;
+            }
+            .main-container {
+                height: calc(100vh - 84px) !important; /* Subtract header */
+                min-height: auto !important;
+                overflow: hidden;
+            }
+            .listViewPageDiv.content-area {
+                height: 100% !important;
+                padding-bottom: 0 !important;
+            }
+            #mailmanagerContainer {
+                height: calc(100vh - 140px) !important; /* viewport height minus headers */
+                overflow: hidden !important;
+                margin: 0 !important;
+                display: flex;
+                flex-direction: row;
+            }
+            #mails_container {
+                height: 100% !important;
+                padding-right: 0 !important;
+                padding-left: 0 !important;
+                display: flex;
+                flex-direction: column;
+            }
+            #mailPreviewContainer {
+                height: 100% !important;
+                overflow-y: auto !important;
+                padding-right: 0 !important;
+                padding-left: 15px !important;
+                background: #ffffff;
+            }
+            .ml-wrap {
+                height: 100% !important;
+            }
+            #emailListDiv {
+                flex: 1 !important;
+                height: auto !important;
+                overflow: hidden !important;
+            }
+        </style>
         <div id="mailmanagerContainer" class="clearfix">
             <input type="hidden" id="refresh_timeout" value="{$MAILBOX->refreshTimeOut()}"/>
             <div id="mails_container" class='col-lg-5'></div>
