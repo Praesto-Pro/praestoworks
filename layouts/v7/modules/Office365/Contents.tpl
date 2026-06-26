@@ -115,7 +115,7 @@
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label for="sync_start_from" style="font-weight: 600; font-size: 13px; color: #475569; display: block; margin-bottom: 5px;">Sync Start Date:</label>
                     <input type="date" class="inputElement" id="sync_start_from" name="sync_start_from" value="{$SYNC_START_FROM}" style="width: 100%; height: 32px; padding: 5px 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 13px; box-sizing: border-box;" />
-                    <small style="margin-top: 4px; display: block; font-size: 11px; color: #64748b; line-height: 1.3;">Only events modified on or after this date will be synchronized.</small>
+                    <small style="margin-top: 4px; display: block; font-size: 11px; color: #64748b; line-height: 1.3;">Only events modified on or after this date will be synchronized and +90 days from sync date.</small>
                 </div>
                 <button type="button" class="btn btn-success btn-xs btn-office365-save-settings" data-sourcemodule="{$SOURCEMODULE}" style="font-weight: 600; padding: 4px 10px; background-color: #2b984b; border-color: #278943; color: white;">
                     <i class="fa fa-save"></i> Save Settings

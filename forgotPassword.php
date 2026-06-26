@@ -39,12 +39,12 @@ if (isset($_REQUEST['username']) && isset($_REQUEST['emailId'])) {
 		);
 		$trackURL = Vtiger_ShortURL_Helper::generateURL($options);
 		$content = 'Dear Customer,<br><br> 
-						You requested a password reset for your PraestoCRM Account.<br> 
+						You requested a password reset for your PraestOS CRM Account.<br> 
 						To create a new password, click on this link <a target="_blank" href='.$trackURL.'>here</a>. 
 						<br><br> 
 						This request was made on '.date("Y-m-d H:i:s").' and will expire in next 1 hour.<br><br> 
 						Regards,<br> 
-						PraestoCRM Support Team.<br>';
+						PraestOS CRM Support Team.<br>';
 
 		$subject = 'Praesto CRM: Password Reset';
 

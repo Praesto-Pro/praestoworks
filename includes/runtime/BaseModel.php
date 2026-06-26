@@ -80,12 +80,15 @@ class Vtiger_Base_Model {
 		return $this->valueMap;
 	}
 
-	/**
-	 * Function to check if the key exists.
-	 * @param String $key
-	 */
 	public function has($key) {
-		return array_key_exists($key, (array)$this->valueMap); // valueMap can be array or TrackableObject
+		if (is_array($this->valueMap)) {
+			return array_key_exists($key, $this->valueMap);
+		} elseif ($this->valueMap instanceof ArrayAccess) {
+			return $this->valueMap->offsetExists($key);
+		} elseif (is_object($this->valueMap)) {
+			return isset($this->valueMap->$key);
+		}
+		return false;
 	}
 
 	/**

@@ -211,11 +211,14 @@ class Office365_Calendar_Connector extends WSAPP_TargetConnector {
             $calendarArray[] = $calendar;
         }
         return $calendarArray;
-    }
+	}
 
     public function transformToTargetRecord($vtEvents, $user = false) {
         file_put_contents('logs/sync_debug.log', "Office365 Transform: Transforming " . count($vtEvents) . " Vtiger events to Office365 format\n", FILE_APPEND);
         $records = array();
+        if (!$user) $user = Users_Record_Model::getCurrentUserModel();
+        $userTimezone = $user->time_zone ? $user->time_zone : 'UTC';
+
         foreach ($vtEvents as $vtEvent) {
             $event = array();
             if ($vtEvent->getMode() == WSAPP_SyncRecordModel::WSAPP_UPDATE_MODE || $vtEvent->getMode() == WSAPP_SyncRecordModel::WSAPP_DELETE_MODE) {
@@ -227,13 +230,34 @@ class Office365_Calendar_Connector extends WSAPP_TargetConnector {
             $event['body'] = array('contentType' => 'text', 'content' => $vtEvent->get('description'));
             $event['location'] = array('displayName' => $vtEvent->get('location'));
             
+            $dateStart = $vtEvent->get('date_start');
+            $timeStart = $vtEvent->get('time_start');
+            $dueDate = $vtEvent->get('due_date');
+            $timeEnd = $vtEvent->get('time_end');
+            
+            if ($dateStart && $timeStart) {
+                $start = new DateTime($dateStart . ' ' . $timeStart, new DateTimeZone('UTC'));
+                $start->setTimezone(new DateTimeZone($userTimezone));
+                $startDateTime = $start->format('Y-m-d\TH:i:s');
+            } else {
+                $startDateTime = '';
+            }
+
+            if ($dueDate && $timeEnd) {
+                $end = new DateTime($dueDate . ' ' . $timeEnd, new DateTimeZone('UTC'));
+                $end->setTimezone(new DateTimeZone($userTimezone));
+                $endDateTime = $end->format('Y-m-d\TH:i:s');
+            } else {
+                $endDateTime = '';
+            }
+
             $event['start'] = array(
-                'dateTime' => $vtEvent->get('date_start') . 'T' . $vtEvent->get('time_start'),
-                'timeZone' => 'UTC'
+                'dateTime' => $startDateTime,
+                'timeZone' => $userTimezone
             );
             $event['end'] = array(
-                'dateTime' => $vtEvent->get('due_date') . 'T' . $vtEvent->get('time_end'),
-                'timeZone' => 'UTC'
+                'dateTime' => $endDateTime,
+                'timeZone' => $userTimezone
             );
             $event['sensitivity'] = (strtolower($vtEvent->get('visibility')) == 'private') ? 'private' : 'normal';
 
