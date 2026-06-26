@@ -13,6 +13,11 @@
         <div class="modal-content">
             <form class="form-horizontal" id="massEmailForm" method="post" action="index.php" enctype="multipart/form-data" name="massEmailForm">
                 {include file="ModalHeader.tpl"|vtemplate_path:$MODULE TITLE={vtranslate('LBL_COMPOSE_EMAIL', $MODULE)}}
+                <div class="modal-footer" style="border-top: none; border-bottom: 1px solid #e5e5e5; padding: 10px 20px; margin-top: 0; text-align: left;">
+                    <button id="sendEmail" name="sendemail" class="btn btn-success" title="{vtranslate("LBL_SEND_EMAIL",$MODULE)}" type="submit"><strong>{vtranslate("LBL_SEND_EMAIL",$MODULE)}</strong></button>
+                    <button id="saveDraft" name="savedraft" class="btn btn-default" title="{vtranslate('LBL_SAVE_AS_DRAFT',$MODULE)}" type="submit"><strong>{vtranslate('LBL_SAVE_AS_DRAFT',$MODULE)}</strong></button>
+                    <a href="#" class="cancelLink" type="reset" data-dismiss="modal" style="margin-left: 15px; vertical-align: middle;">{vtranslate('LBL_CANCEL', $MODULE)}</a>
+                </div>
                 <div class="modal-body">
                     <input type="hidden" name="selected_ids" value='{ZEND_JSON::encode($SELECTED_IDS)}' />
                     <input type="hidden" name="excluded_ids" value='{ZEND_JSON::encode($EXCLUDED_IDS)}' />
@@ -209,14 +214,6 @@
                     <div id="emailTemplateWarningContent" style="display: none;">
                         {vtranslate('LBL_EMAILTEMPLATE_WARNING_CONTENT',$MODULE)}
                     </div>
-                </div>
-                
-                <div class="modal-footer">
-                    <div class="pull-right cancelLinkContainer">
-                        <a href="#" class="cancelLink" type="reset" data-dismiss="modal">{vtranslate('LBL_CANCEL', $MODULE)}</a>
-                    </div>
-                    <button id="sendEmail" name="sendemail" class="btn btn-success" title="{vtranslate("LBL_SEND_EMAIL",$MODULE)}" type="submit"><strong>{vtranslate("LBL_SEND_EMAIL",$MODULE)}</strong></button>
-                    <button id="saveDraft" name="savedraft" class="btn btn-default" title="{vtranslate('LBL_SAVE_AS_DRAFT',$MODULE)}" type="submit"><strong>{vtranslate('LBL_SAVE_AS_DRAFT',$MODULE)}</strong></button>
                 </div>
             </form>
         </div>

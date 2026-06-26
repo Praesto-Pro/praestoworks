@@ -16,6 +16,27 @@
 		<hr style='margin:5px 0;width:100%'>
 	</div>
 	<form class="form-horizontal" id="massEmailForm" method="post" action="index.php" enctype="multipart/form-data" name="massEmailForm">
+		<div class="paddingTop20 row-fluid boxSizingBorderBox" style="border-bottom: 1px solid #ddd; padding-bottom: 15px; margin-bottom: 15px;">
+			<div class="span8">
+				<div class="btn-toolbar" style="margin: 0;">
+					<span class="btn-group span5 marginLeftZero">
+						<button class="btn btn-success" id="sendEmail" type="submit" title="{vtranslate('LBL_SEND',$MODULE)}"><strong>{vtranslate('LBL_SEND',$MODULE)}</strong></button>&nbsp;&nbsp;
+						<button type="submit" class="btn" style="" id="saveDraft" title="{vtranslate('LBL_SAVE_AS_DRAFT',$MODULE)}"><strong>{vtranslate('LBL_SAVE_AS_DRAFT',$MODULE)}</strong></button>
+						{if !empty($PARENT_EMAIL_ID)}
+							<button type="button" class="btn" id="gotoPreview" title="{vtranslate('LBL_GO_TO_PREVIEW',$MODULE)}" style="margin-left: 5px;"><strong>{vtranslate('LBL_GO_TO_PREVIEW',$MODULE)}</strong></button>
+						{/if}
+					</span>
+					<span name="progressIndicator" style="height:30px;">&nbsp;</span>
+				</div>
+			</div>
+			{if $MODULE_IS_ACTIVE}
+				<div class="span4">
+					<span class="btn-toolbar pull-right" style="margin: 0;">
+						<button type="button" class="btn" id="selectEmailTemplate" data-url="{$EMAIL_TEMPLATE_URL}" title="{vtranslate('LBL_SELECT_EMAIL_TEMPLATE',$MODULE)}"><strong>{vtranslate('LBL_SELECT_EMAIL_TEMPLATE',$MODULE)}</strong></button>
+					</span>
+				</div>
+			{/if}
+		</div>
 		<input type="hidden" name="selected_ids" value='{ZEND_JSON::encode($SELECTED_IDS)}' />
 		<input type="hidden" name="excluded_ids" value='{ZEND_JSON::encode($EXCLUDED_IDS)}' />
 		<input type="hidden" name="viewname" value="{$VIEWNAME}" />
@@ -147,27 +168,6 @@
 				</span>
 			</span>
 			<span class="span4"></span>
-		</div>
-		<div class="paddingTop20 row-fluid boxSizingBorderBox">
-			<div class="span8">
-				<div class="btn-toolbar">
-					<span class="btn-group span5 marginLeftZero">
-						<button class="btn btn-success" id="sendEmail" type="submit" title="{vtranslate('LBL_SEND',$MODULE)}"><strong>{vtranslate('LBL_SEND',$MODULE)}</strong></button>&nbsp;&nbsp;
-						<button type="submit" class="btn" style="" id="saveDraft" title="{vtranslate('LBL_SAVE_AS_DRAFT',$MODULE)}"><strong>{vtranslate('LBL_SAVE_AS_DRAFT',$MODULE)}</strong></button>
-						{if !empty($PARENT_EMAIL_ID)}
-							<button type="button" class="btn" id="gotoPreview" title="{vtranslate('LBL_GO_TO_PREVIEW',$MODULE)}" style="margin-left: 5px;"><strong>{vtranslate('LBL_GO_TO_PREVIEW',$MODULE)}</strong></button>
-						{/if}
-					</span>
-					<span name="progressIndicator" style="height:30px;">&nbsp;</span>
-				</div>
-			</div>
-			{if $MODULE_IS_ACTIVE}
-				<div class="span4">
-					<span class="btn-toolbar pull-right">
-						<button type="button" class="btn" id="selectEmailTemplate" data-url="{$EMAIL_TEMPLATE_URL}" title="{vtranslate('LBL_SELECT_EMAIL_TEMPLATE',$MODULE)}"><strong>{vtranslate('LBL_SELECT_EMAIL_TEMPLATE',$MODULE)}</strong></button>
-					</span>
-				</div>
-			{/if}
 		</div>
 		{if $RELATED_LOAD eq true}
 			<input type="hidden" name="related_load" value={$RELATED_LOAD} />
