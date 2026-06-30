@@ -18,7 +18,10 @@ class Vtiger_History_Dashboard extends Vtiger_IndexAjax_View {
 		$moduleName = $request->getModule();
 		$historyType = $request->get('historyType');
 		$userId = $request->get('type');
-            
+		if(empty($userId)) {
+			$userId = $currentUser->getId();
+		}
+
 		$page = $request->get('page');
 		if(empty($page)) {
 			$page = 1;
@@ -61,6 +64,7 @@ class Vtiger_History_Dashboard extends Vtiger_IndexAjax_View {
 		} else {
 			$accessibleUsers = $currentUser->getAccessibleUsers();
 			$viewer->assign('ACCESSIBLE_USERS', $accessibleUsers);
+			$viewer->assign('SELECTED_USER_ID', $userId);
 			$viewer->view('dashboards/History.tpl', $moduleName);
 		}
 	}

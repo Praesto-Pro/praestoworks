@@ -14,13 +14,12 @@
         <div class="dashboardTitle" title="{vtranslate($WIDGET->getTitle(), $MODULE_NAME)}"><b>&nbsp;&nbsp;{vtranslate($WIDGET->getTitle())}</b></div>
     </div>
     <div class="userList">
-        {assign var=CURRENT_USER_ID value=$CURRENT_USER->getId()}
         {if $ACCESSIBLE_USERS|@count gt 1}
             <select class="select2 widgetFilter col-lg-3 reloadOnChange" name="type">
-                <option value="all"  selected>{vtranslate('All', $MODULE_NAME)}</option>
+                <option value="all"{if $SELECTED_USER_ID eq 'all'} selected{/if}>{vtranslate('All', $MODULE_NAME)}</option>
                 {foreach key=USER_ID from=$ACCESSIBLE_USERS item=USER_NAME}
-                    <option value="{$USER_ID}">
-                    {if $USER_ID eq $CURRENT_USER_ID} 
+                    <option value="{$USER_ID}"{if $USER_ID eq $SELECTED_USER_ID} selected{/if}>
+                    {if $USER_ID eq $SELECTED_USER_ID} 
                         {vtranslate('LBL_MINE',$MODULE_NAME)}
                     {else}
                         {$USER_NAME}
