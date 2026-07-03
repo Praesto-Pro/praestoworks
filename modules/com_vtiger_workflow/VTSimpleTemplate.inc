@@ -68,6 +68,7 @@ class VTSimpleTemplate{
 							foreach ($referenceIdsList as $referenceId) {
 								$entity = $this->cache->forId($referenceId);
 								$data = $entity->getData();
+								if(empty($data)) continue;
 								if($this->useValue($data, $fieldname)) {
 									$parts[] = $this->transformToUserFormat($referenceModule, $fieldname, $data[$fieldname]);
 								}
@@ -91,6 +92,7 @@ class VTSimpleTemplate{
 								$refId = vtws_getWebserviceEntityId("Users", $userId);
 								$entity = $this->cache->forId($refId);
 								$data = $entity->getData();
+								if(empty($data)) continue;
 								if($this->useValue($data, $fieldname)){
 									$parts[] = $this->transformToUserFormat($referenceModule, $fieldname, $data[$fieldname]);
 								}
@@ -99,7 +101,9 @@ class VTSimpleTemplate{
 
 						} elseif($entity->getModuleName()===$referenceModule){
 							$data = $entity->getData();
-							if($this->useValue($data, $fieldname)){
+							if(empty($data)){
+								$result = '';
+							} elseif($this->useValue($data, $fieldname)){
 								$handler = vtws_getModuleHandlerFromName($referenceModule, $this->cache->user);
 								$meta = $handler->getMeta();
 								$referenceFieldList = $meta->getReferenceFieldDetails();

@@ -1288,11 +1288,14 @@ class Vtiger_Util_Helper {
             }
         }elseif(!empty($fieldValue) && $fieldDataType == 'multipicklist'){
             if(!empty($editablePicklistValues)){
-                foreach($fieldValue as $key => $value){
+                $isString = !is_array($fieldValue);
+                $valuesArray = $isString ? explode(' |##| ', $fieldValue) : $fieldValue;
+                foreach($valuesArray as $key => $value){
                     if(!isset($editablePicklistValues[$value])){
-                        unset($fieldValue[$key]);
+                        unset($valuesArray[$key]);
                     }
                 }
+                $fieldValue = $isString ? implode(' |##| ', $valuesArray) : $valuesArray;
             }
         }
         return $fieldValue;
