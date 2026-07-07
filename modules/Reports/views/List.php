@@ -154,6 +154,11 @@ class Reports_List_View extends Vtiger_Index_View {
 		$listViewModel->set('module', $moduleModel);
 		$listViewModel->set('folderid', $folderId);
 
+		if(empty($orderBy) && PerformancePrefs::getBoolean('LISTVIEW_DEFAULT_SORTING', true) && $request->get('mode') != 'removeSorting') {
+			$orderBy = $listViewModel->get('orderby');
+			$sortOrder = $listViewModel->get('sortorder');
+		}
+
 		if(!empty($orderBy)) {
 			$listViewModel->set('orderby', $orderBy);
 			$listViewModel->set('sortorder', $sortOrder);

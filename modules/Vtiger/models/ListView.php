@@ -547,6 +547,24 @@ class Vtiger_ListView_Model extends Vtiger_Base_Model {
 		}
 	}
 
+	public function get($key) {
+		$value = parent::get($key);
+		if (($key === 'orderby' || $key === 'sortorder') && empty($value) && PerformancePrefs::getBoolean('LISTVIEW_DEFAULT_SORTING', true)) {
+			$moduleName = $this->getModule()->get('name');
+			if ($moduleName && $moduleName != 'Users') {
+				$moduleFocus = CRMEntity::getInstance($moduleName);
+				if (!empty($moduleFocus->default_order_by)) {
+					if ($key === 'orderby') {
+						return $moduleFocus->default_order_by;
+					} else {
+						return !empty($moduleFocus->default_sort_order) ? $moduleFocus->default_sort_order : 'ASC';
+					}
+				}
+			}
+		}
+		return $value;
+	}
+
 	public function isImportEnabled() {
 		$linkParams = array('MODULE'=>$this->getModule()->getName(), 'ACTION'=>'LIST');
 		$listViewLinks = $this->getListViewLinks($linkParams);

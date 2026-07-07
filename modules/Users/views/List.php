@@ -68,6 +68,11 @@ class Users_List_View extends Settings_Vtiger_List_View {
 		$pagingModel = new Vtiger_Paging_Model();
 		$pagingModel->set('page', $pageNumber);
 
+		if(empty($orderBy) && PerformancePrefs::getBoolean('LISTVIEW_DEFAULT_SORTING', true) && $request->get('mode') != 'removeSorting') {
+			$orderBy = $listViewModel->get('orderby');
+			$sortOrder = $listViewModel->get('sortorder');
+		}
+
 		if(!empty($orderBy)) {
 			$listViewModel->set('orderby', $orderBy);
 			$listViewModel->set('sortorder',$sortOrder);
