@@ -100,10 +100,28 @@ class Office365_Sync_View extends Vtiger_PopupAjax_View {
         $records = $this->invokeExposedMethod($sourceModule);
         error_log("Office365 Sync: Records synced: " . print_r($records, true));
         
+        $db = PearDatabase::getInstance();
+        $user = Users_Record_Model::getCurrentUserModel();
+        $extensiontabid = getTabid('Office365');
+        $result = $db->pquery(
+            "SELECT id FROM vtiger_wsapp_logs_basic WHERE extensiontabid = ? AND userid = ? ORDER BY id DESC LIMIT 1",
+            array($extensiontabid, $user->getId())
+        );
+        $logId = 0;
+        if ($db->num_rows($result) > 0) {
+            $logId = $db->query_result($result, 0, 'id');
+        }
+        file_put_contents(
+            'cache/sync_debug.log',
+            date('Y-m-d H:i:s') . " - extensiontabid=" . (string)$extensiontabid . ", userid=" . (string)$user->getId() . ", logId=" . (string)$logId . "\n",
+            FILE_APPEND
+        );
+        
         $viewer->assign('MODULE_NAME', $request->getModule());
         $viewer->assign('RECORDS', $records);
         $viewer->assign('SYNCTIME', Office365_Utils_Helper::getLastSyncTime($sourceModule));
         $viewer->assign('SOURCEMODULE', $sourceModule);
+        $viewer->assign('LOG_ID', $logId);
         $viewer->view('ContentDetails.tpl', $request->getModule());
     }
 

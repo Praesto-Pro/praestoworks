@@ -40,11 +40,23 @@ class Calendar_Office365Sync_Action extends Vtiger_Action_Controller {
 
         $countRecords = $this->getSyncRecordsCount($records);
 
+        $db = PearDatabase::getInstance();
+        $extensiontabid = getTabid('Office365');
+        $result = $db->pquery(
+            "SELECT id FROM vtiger_wsapp_logs_basic WHERE extensiontabid = ? AND userid = ? ORDER BY id DESC LIMIT 1",
+            array($extensiontabid, $user->getId())
+        );
+        $logId = 0;
+        if ($result && $db->num_rows($result) > 0) {
+            $logId = $db->query_result($result, 0, 'id');
+        }
+
         $viewer = Vtiger_Viewer::getInstance();
         $viewer->assign('MODULE_NAME', 'Office365');
         $viewer->assign('RECORDS', $countRecords);
         $viewer->assign('SYNCTIME', Office365_Utils_Helper::getLastSyncTime($sourceModule));
         $viewer->assign('SOURCEMODULE', $sourceModule);
+        $viewer->assign('LOG_ID', $logId);
 
         // Get HTML content
         $html = $viewer->view('ContentDetails.tpl', 'Office365', true);

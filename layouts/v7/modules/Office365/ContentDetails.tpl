@@ -13,16 +13,31 @@
                 <div class="panel-body">
                     <ul class="list-group">
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {vtranslate('LBL_CREATED', $MODULE_NAME)}
-                            <span class="badge badge-primary badge-pill">{$RECORDS.vtiger.create}</span>
+                            {if $RECORDS.vtiger.create > 0 && $LOG_ID}
+                                <a class="syncLogDetail extensionLink" data-type="vt_create" data-id="{$LOG_ID}" style="cursor: pointer; text-decoration: underline; font-weight: bold; color: #0078d4;">{vtranslate('LBL_CREATED', $MODULE_NAME)}</a>
+                                <a class="syncLogDetail badge badge-primary badge-pill" data-type="vt_create" data-id="{$LOG_ID}" style="cursor: pointer; text-decoration: none !important; color: #ffffff !important;">{$RECORDS.vtiger.create}</a>
+                            {else}
+                                {vtranslate('LBL_CREATED', $MODULE_NAME)}
+                                <span class="badge badge-primary badge-pill">{$RECORDS.vtiger.create}</span>
+                            {/if}
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {vtranslate('LBL_UPDATED', $MODULE_NAME)}
-                            <span class="badge badge-primary badge-pill">{$RECORDS.vtiger.update}</span>
+                            {if $RECORDS.vtiger.update > 0 && $LOG_ID}
+                                <a class="syncLogDetail extensionLink" data-type="vt_update" data-id="{$LOG_ID}" style="cursor: pointer; text-decoration: underline; font-weight: bold; color: #0078d4;">{vtranslate('LBL_UPDATED', $MODULE_NAME)}</a>
+                                <a class="syncLogDetail badge badge-primary badge-pill" data-type="vt_update" data-id="{$LOG_ID}" style="cursor: pointer; text-decoration: none !important; color: #ffffff !important;">{$RECORDS.vtiger.update}</a>
+                            {else}
+                                {vtranslate('LBL_UPDATED', $MODULE_NAME)}
+                                <span class="badge badge-primary badge-pill">{$RECORDS.vtiger.update}</span>
+                            {/if}
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {vtranslate('LBL_DELETED', $MODULE_NAME)}
-                            <span class="badge badge-danger badge-pill">{$RECORDS.vtiger.delete}</span>
+                            {if $RECORDS.vtiger.delete > 0 && $LOG_ID}
+                                <a class="syncLogDetail extensionLink" data-type="vt_delete" data-id="{$LOG_ID}" style="cursor: pointer; text-decoration: underline; font-weight: bold; color: #d9534f;">{vtranslate('LBL_DELETED', $MODULE_NAME)}</a>
+                                <a class="syncLogDetail badge badge-danger badge-pill" data-type="vt_delete" data-id="{$LOG_ID}" style="cursor: pointer; text-decoration: none !important; color: #ffffff !important;">{$RECORDS.vtiger.delete}</a>
+                            {else}
+                                {vtranslate('LBL_DELETED', $MODULE_NAME)}
+                                <span class="badge badge-danger badge-pill">{$RECORDS.vtiger.delete}</span>
+                            {/if}
                         </li>
                     </ul>
                 </div>
@@ -36,16 +51,31 @@
                 <div class="panel-body">
                     <ul class="list-group">
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {vtranslate('LBL_CREATED', $MODULE_NAME)}
-                            <span class="badge badge-primary badge-pill">{$RECORDS.office365.create}</span>
+                            {if $RECORDS.office365.create > 0 && $LOG_ID}
+                                <a class="syncLogDetail extensionLink" data-type="app_create" data-id="{$LOG_ID}" style="cursor: pointer; text-decoration: underline; font-weight: bold; color: #0078d4;">{vtranslate('LBL_CREATED', $MODULE_NAME)}</a>
+                                <a class="syncLogDetail badge badge-primary badge-pill" data-type="app_create" data-id="{$LOG_ID}" style="cursor: pointer; text-decoration: none !important; color: #ffffff !important;">{$RECORDS.office365.create}</a>
+                            {else}
+                                {vtranslate('LBL_CREATED', $MODULE_NAME)}
+                                <span class="badge badge-primary badge-pill">{$RECORDS.office365.create}</span>
+                            {/if}
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {vtranslate('LBL_UPDATED', $MODULE_NAME)}
-                            <span class="badge badge-primary badge-pill">{$RECORDS.office365.update}</span>
+                            {if $RECORDS.office365.update > 0 && $LOG_ID}
+                                <a class="syncLogDetail extensionLink" data-type="app_update" data-id="{$LOG_ID}" style="cursor: pointer; text-decoration: underline; font-weight: bold; color: #0078d4;">{vtranslate('LBL_UPDATED', $MODULE_NAME)}</a>
+                                <a class="syncLogDetail badge badge-primary badge-pill" data-type="app_update" data-id="{$LOG_ID}" style="cursor: pointer; text-decoration: none !important; color: #ffffff !important;">{$RECORDS.office365.update}</a>
+                            {else}
+                                {vtranslate('LBL_UPDATED', $MODULE_NAME)}
+                                <span class="badge badge-primary badge-pill">{$RECORDS.office365.update}</span>
+                            {/if}
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {vtranslate('LBL_DELETED', $MODULE_NAME)}
-                            <span class="badge badge-danger badge-pill">{$RECORDS.office365.delete}</span>
+                            {if $RECORDS.office365.delete > 0 && $LOG_ID}
+                                <a class="syncLogDetail extensionLink" data-type="app_delete" data-id="{$LOG_ID}" style="cursor: pointer; text-decoration: underline; font-weight: bold; color: #d9534f;">{vtranslate('LBL_DELETED', $MODULE_NAME)}</a>
+                                <a class="syncLogDetail badge badge-danger badge-pill" data-type="app_delete" data-id="{$LOG_ID}" style="cursor: pointer; text-decoration: none !important; color: #ffffff !important;">{$RECORDS.office365.delete}</a>
+                            {else}
+                                {vtranslate('LBL_DELETED', $MODULE_NAME)}
+                                <span class="badge badge-danger badge-pill">{$RECORDS.office365.delete}</span>
+                            {/if}
                         </li>
                     </ul>
                 </div>
@@ -64,8 +94,14 @@
     .sync-results-container .panel-heading {
         font-weight: bold;
     }
-    .badge-pill {
-        float: right;
+    .sync-results-container .list-group-item {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+    }
+    .sync-results-container .badge {
+        float: none !important;
+        display: inline-block !important;
     }
 </style>
 

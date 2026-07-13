@@ -464,6 +464,23 @@
                     window.location.href = "index.php?module=Calendar&view=List";
                 }
             });
+
+            jq(document).off('click.office365-logdetail').on('click.office365-logdetail', '.syncLogDetail', function(e) {
+                var element = jq(e.currentTarget);
+                var params = {
+                    'module': 'Office365',
+                    'view': 'Index',
+                    'mode': 'showLogDetail',
+                    'logid': element.data('id'),
+                    'logtype': element.data('type')
+                };
+                if (typeof app !== 'undefined' && app.request) {
+                    app.request.post({data: params}).then(function(error, data){
+                        app.helper.loadPageContentOverlay(data);
+                        app.helper.showVerticalScroll(jq('#detailviewhtml .datacontent'), {'autoHideScrollbar': true});
+                    });
+                }
+            });
         })();
         {/literal}
     </script>

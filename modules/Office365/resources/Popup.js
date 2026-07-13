@@ -17,6 +17,21 @@ Vtiger_Popup_Js("Office365_Popup_Js", {}, {
             var sourcemodule = jQuery(this).data('sourcemodule');
             self.configureSync(sourcemodule);
         });
+        
+        jQuery(document).off('click.office365-logdetail').on('click.office365-logdetail', '.syncLogDetail', function(e) {
+            var element = jQuery(e.currentTarget);
+            var params = {
+                module: 'Office365',
+                view : 'Index',
+                mode : 'showLogDetail',
+                logid : element.data('id'),
+                logtype: element.data('type')
+            }
+            app.request.post({data: params}).then(function(error, data){
+                app.helper.loadPageContentOverlay(data);
+                app.helper.showVerticalScroll(jQuery('#detailviewhtml .datacontent'), {'autoHideScrollbar': true});
+            });
+        });
     },
     
     startSync: function(sourcemodule) {
